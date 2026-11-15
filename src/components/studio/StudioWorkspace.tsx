@@ -381,25 +381,30 @@ export function StudioWorkspace() {
           </div>
 
           {showPhotoroomKeyInput && (
-            <div className="p-3 bg-white/80 backdrop-blur-xs rounded-xl border border-amber-200 flex flex-col sm:flex-row gap-2 pt-2 animate-in fade-in duration-150">
-              <input
-                type="password"
-                placeholder="Paste your Photoroom API key (e.g. pt_...)"
-                value={photoroomKeyInput}
-                onChange={(e) => setPhotoroomKeyInput(e.target.value)}
-                className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              />
-              <button
-                onClick={() => {
-                  if (photoroomKeyInput.trim()) {
-                    handleUpdateOptions({ apiKey: photoroomKeyInput.trim() });
-                    setShowPhotoroomKeyInput(false);
-                  }
-                }}
-                className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer"
-              >
-                Save & Activate Photoroom
-              </button>
+            <div className="p-3.5 bg-white/90 backdrop-blur-xs rounded-xl border border-amber-200 space-y-2 pt-2 animate-in fade-in duration-150">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="password"
+                  placeholder="Paste Live or Sandbox key (e.g. sandbox_... or live key)"
+                  value={photoroomKeyInput}
+                  onChange={(e) => setPhotoroomKeyInput(e.target.value)}
+                  className="flex-1 px-3 py-2 text-xs rounded-lg border border-gray-300 bg-white font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+                <button
+                  onClick={() => {
+                    if (photoroomKeyInput.trim()) {
+                      handleUpdateOptions({ apiKey: photoroomKeyInput.trim() });
+                      setShowPhotoroomKeyInput(false);
+                    }
+                  }}
+                  className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors cursor-pointer"
+                >
+                  Save & Activate
+                </button>
+              </div>
+              <p className="text-[11px] text-gray-500">
+                💡 <strong>Sandbox Testing:</strong> Photoroom gives up to <strong>1,000 free test calls/month</strong>. Use your Sandbox key from your Photoroom dashboard, or prefix your key with <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-800 font-mono">sandbox_</code>.
+              </p>
             </div>
           )}
         </div>

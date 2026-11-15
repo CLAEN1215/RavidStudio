@@ -105,15 +105,20 @@ export default function SettingsPage() {
           </div>
           <input
             type="password"
-            placeholder="Paste your Photoroom API key (pt_...)"
+            placeholder="Paste Live key or Sandbox key (e.g. sandbox_... or live key)"
             value={photoroomKey}
             onChange={(e) => setPhotoroomKey(e.target.value)}
             className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 font-mono"
           />
-          <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-            Used to remove complex 1688 backgrounds, black display boards, and Chinese text labels.
-          </p>
+          <div className="text-[11px] text-gray-500 space-y-1">
+            <p className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+              Removes complex 1688 backgrounds, black display boards, and Chinese text labels.
+            </p>
+            <p className="text-gray-400">
+              💡 <strong>Free Sandbox Mode:</strong> Get up to 1,000 free test cutouts/month with your Photoroom Sandbox key or by prepending <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-700 font-mono">sandbox_</code> to your key.
+            </p>
+          </div>
         </div>
 
         {/* 2. Google Gemini Pro AI Key */}
