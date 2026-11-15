@@ -177,8 +177,26 @@ export function StudioWorkspace() {
     );
 
     try {
+      let imageToProcess = item.originalDataUrl;
+
+      // Built-in AI neural background removal: if no Photoroom API key is configured,
+      // run client-side neural segmentation to erase complex backgrounds (black tables, dark cards)
+      if (!globalOptions.apiKey) {
+        try {
+          const { removeBackground } = await import('@imgly/background-removal');
+          const blob = await removeBackground(item.originalDataUrl);
+          const reader = new FileReader();
+          imageToProcess = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (clientRemoverErr) {
+          console.warn('Client-side AI background removal failed, falling back to server:', clientRemoverErr);
+        }
+      }
+
       const payload = {
-        image: item.originalDataUrl,
+        image: imageToProcess,
         filename: item.name,
         options: {
           ...item.options,

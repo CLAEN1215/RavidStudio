@@ -24,6 +24,12 @@ export async function removeProductBackground(
   imageBuffer: Buffer,
   apiKey?: string
 ): Promise<{ buffer: Buffer; usedPhotoroom: boolean }> {
+  // 1. If image is already transparent (from client-side AI neural remover or transparent PNG)
+  const meta = await sharp(imageBuffer).metadata();
+  if (meta.hasAlpha) {
+    return { buffer: imageBuffer, usedPhotoroom: true };
+  }
+
   const activeKey = apiKey || process.env.PHOTOROOM_API_KEY;
 
   if (activeKey) {
