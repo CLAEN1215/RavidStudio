@@ -23,8 +23,9 @@ import { ScoredVariant } from '@/app/api/research/analyze-1688/route';
 
 export default function ResearchPage() {
   const [listingUrl, setListingUrl] = useState(
-    'https://detail.1688.com/offer/7829102910.html'
+    'https://detail.1688.com/offer/934267247568.html'
   );
+  const [productTitleInput, setProductTitleInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showOthers, setShowOthers] = useState(false);
@@ -92,6 +93,7 @@ export default function ResearchPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: urlToAnalyze,
+          rawText: productTitleInput.trim() || undefined,
           geminiApiKey,
         }),
       });
@@ -228,38 +230,50 @@ export default function ResearchPage() {
             e.preventDefault();
             handleAnalyze1688();
           }}
-          className="flex flex-col sm:flex-row gap-3"
+          className="space-y-3"
         >
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={listingUrl}
+                onChange={(e) => {
+                  setListingUrl(e.target.value);
+                  if (errorMessage) setErrorMessage(null);
+                }}
+                placeholder="https://detail.1688.com/offer/..."
+                className="w-full pl-10 pr-4 py-3 text-xs rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 text-xs font-bold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm flex-shrink-0 cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Evaluating All Variants...
+                </>
+              ) : (
+                <>
+                  <Trophy className="w-4 h-4" />
+                  Pick Top 3 Best Products
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
             <input
               type="text"
-              value={listingUrl}
-              onChange={(e) => {
-                setListingUrl(e.target.value);
-                if (errorMessage) setErrorMessage(null);
-              }}
-              placeholder="https://detail.1688.com/offer/..."
-              className="w-full pl-10 pr-4 py-3 text-xs rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-mono"
+              value={productTitleInput}
+              onChange={(e) => setProductTitleInput(e.target.value)}
+              placeholder="Product Name or Chinese Specs (Optional: e.g. 荷韵茶筅立 or 景德镇粗陶抹茶碗)..."
+              className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-gray-200 bg-gray-50/40 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-gray-700 placeholder:text-gray-400"
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex items-center justify-center gap-2 px-6 py-3 text-xs font-bold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 transition-colors shadow-sm flex-shrink-0 cursor-pointer"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Evaluating All Variants...
-              </>
-            ) : (
-              <>
-                <Trophy className="w-4 h-4" />
-                Pick Top 3 Best Products
-              </>
-            )}
-          </button>
         </form>
 
         {/* Quick Example Button */}

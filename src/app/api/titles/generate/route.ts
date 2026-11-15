@@ -40,7 +40,11 @@ Return ONLY valid JSON matching this structure:
 
         const text = response.text;
         if (text) {
-          const parsed = JSON.parse(text);
+          const cleanText = text
+            .replace(/```json\s*/gi, '')
+            .replace(/```\s*$/g, '')
+            .trim();
+          const parsed = JSON.parse(cleanText);
           return NextResponse.json({ success: true, ...parsed });
         }
       } catch (geminiError) {

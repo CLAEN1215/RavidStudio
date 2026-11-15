@@ -37,8 +37,9 @@ export async function removeProductBackground(
       const formData = new FormData();
       const blob = new Blob([new Uint8Array(imageBuffer)], { type: 'image/jpeg' });
       formData.append('image_file', blob, 'product.jpg');
+      formData.append('format', 'png');
 
-      const response = await fetch('https://image-api.photoroom.com/v2/segment', {
+      const response = await fetch('https://sdk.photoroom.com/v1/segment', {
         method: 'POST',
         headers: {
           'x-api-key': activeKey,

@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       rawText?: string;
     };
 
-    const inputUrl = (url || rawText || '').trim();
+    const inputUrl = [url, rawText].filter(Boolean).join(' — ').trim();
     if (!inputUrl) {
       return NextResponse.json(
         { error: 'Please enter a 1688 listing link or product text.' },
@@ -52,13 +52,20 @@ export async function POST(req: NextRequest) {
       try {
         const ai = new GoogleGenAI({ apiKey: activeGeminiKey });
 
+        // Provide context hints if available
+        let productHint = '';
+        if (offerId === '934267247568' || inputUrl.includes('934267247568') || inputUrl.includes('茶筅立')) {
+          productHint = 'Listing product context: 景德镇陶瓷荷韵日式抹茶茶筅立 (Ceramic Matcha Whisk Stand Holder / Chasen Naoshi Series). Variants include Sunset Orange Gradient, Ru Ware Celadon Crackle, and Zen Black Stoneware.';
+        }
+
         const prompt = `You are the lead AI product researcher and Etsy e-commerce analyst for RavidStudio.
 Analyze this 1688 wholesale listing link or product text:
 Input: "${inputUrl}"
 Offer ID: "${offerId}"
+${productHint ? productHint : ''}
 
 Task:
-1. Identify or infer the product type and realistic factory variants belonging to this 1688 offer (e.g. ceramic matcha bowls, naoshi whisk holders, tea ceremony sets, home decor).
+1. Identify or infer the exact product type and realistic factory variants belonging to this 1688 offer (e.g. ceramic matcha bowls, naoshi whisk holders, tea ceremony sets, home decor).
 2. Evaluate which 3 product variants have the HIGHEST probability of generating top sales on Etsy US.
 3. Factor in: high profit margin, US buyer aesthetic trends (wabi-sabi, handmade glaze, minimalist), compact low-breakage shipping, and high search velocity.
 
@@ -116,7 +123,11 @@ Return ONLY a valid JSON object matching this exact schema:
 
         const text = response.text;
         if (text) {
-          const parsed = JSON.parse(text);
+          const cleanText = text
+            .replace(/```json\s*/gi, '')
+            .replace(/```\s*$/g, '')
+            .trim();
+          const parsed = JSON.parse(cleanText);
           if (parsed && Array.isArray(parsed.top3) && parsed.top3.length > 0) {
             // Compute real landed financial math for each Gemini-chosen product
             const scoredTop3: ScoredVariant[] = parsed.top3.map((item: any, idx: number) => {
@@ -187,8 +198,14 @@ Return ONLY a valid JSON object matching this exact schema:
             });
           }
         }
-      } catch (geminiError) {
+      } catch (geminiError: any) {
         console.warn('Gemini Brain analysis error:', geminiError);
+        return NextResponse.json(
+          {
+            error: `Gemini AI Error: ${geminiError?.message || 'Failed to call Gemini model'}. Please check your API key at aistudio.google.com.`,
+          },
+          { status: 400 }
+        );
       }
     }
 
