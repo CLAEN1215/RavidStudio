@@ -3,7 +3,7 @@
  * Uses @google/genai SDK with structured JSON outputs
  */
 
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 import type {
   GeminiProductAnalysis,
   GeminiMarketInterpretation,
@@ -16,14 +16,14 @@ import type {
   ProfitabilityResult,
 } from '@/types';
 
-function getClient(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY;
+function getClient(overrideApiKey?: string): GoogleGenAI {
+  const apiKey = overrideApiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
   return new GoogleGenAI({ apiKey });
 }
 
 function getModel(): string {
-  return process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+  return process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 }
 
 // ─── Product Analysis from text/URL data ──────────────────────────────────
@@ -298,6 +298,160 @@ Do not include raw financial calculations — those are shown separately.`;
   });
 
   return response.text ?? '';
+}
+
+// ─── 1688 100-Point Theory & Algorithm-Driven US Etsy Variant Evaluation ────
+
+export interface Gemini100PointVariant {
+  id: string;
+  skuName: string;
+  skuNameEn: string;
+  category: string;
+  priceCny: number;
+  hasSpout: boolean;
+  diameterCm: number;
+  glazeStyle: string;
+  isBundle: boolean;
+  bundlePieces: number;
+  colorTheme: string;
+  consumerBehaviorScore: number;
+  algorithmCTRScore: number;
+  aestheticTrendScore: number;
+  unitEconomicsScore: number;
+  totalScore: number;
+  winningRationale: string;
+  suggestedEtsyRetailUsd: number;
+  etsyTitle: string;
+  etsyTags: string[];
+}
+
+export interface Gemini100PointResult {
+  listingTitle: string;
+  marketThesis: string;
+  variants: Gemini100PointVariant[];
+}
+
+export async function analyze1688VariantsWith100PointModel(
+  productData: {
+    url?: string;
+    offerId?: string;
+    pastedText?: string;
+    extractedTitle?: string;
+    specs?: Record<string, string>;
+    knownSkus?: Array<{ name: string; priceCny: number }>;
+  },
+  apiKey?: string
+): Promise<Gemini100PointResult> {
+  const ai = getClient(apiKey);
+  const model = getModel();
+
+  const prompt = `You are a world-class behavioral e-commerce strategist and Etsy search algorithm specialist.
+Analyze this 1688 wholesale matcha teaware listing and predict which variants will generate the HIGHEST SALES on Etsy US.
+
+IMPORTANT: Do NOT use 1688 supplier sales volume or historical popularity in China.
+Instead, evaluate variants strictly using this 100-POINT US MARKET & ALGORITHM MODEL:
+
+1. US Consumer Behavior & Functional Theory (30 pts):
+   - Jobs-to-be-Done (JTBD) (+15 pts): US buyers' primary job is making ICED MATCHA LATTES over oat/almond milk. Reward bowls with an ergonomic pouring spout (katakuchi / 片口 / 鹰嘴) that prevents counter spills when transferring whisked matcha into tall glasses.
+   - Whisking Ergonomics & Fluid Dynamics (+15 pts): 11.5–13 cm wide diameter with gently curved vertical walls allowing vigorous figure-eight ("W") bamboo whisking without splashing.
+
+2. Etsy Search Algorithm & CTR Mechanics (30 pts):
+   - Mobile Thumbnail Visual Pop (+15 pts): High-contrast tactile textures (kiln-changed reactive glazes 窑变釉, speckled raw stoneware, wavy rims) that pop on mobile search grids against sterile white competitors.
+   - Gift-Giver Perceived Value & AOV (+15 pts): Complete 4-5 piece curated bundles (spouted bowl + whisk holder + bamboo whisk + scoop + sifter) triggering higher Average Order Value, gift psychology, and algorithmic search momentum over standalone bowls.
+
+3. US Color Psychology & Aesthetic Trend Fit (20 pts):
+   - Alignment with US Japandi/minimalist cafe trends: soft matcha sage green, strawberry blush pink, speckled vanilla cream, earthy terracotta vs sterile industrial colors.
+
+4. Unit Economics & Etsy Creativity Standards (20 pts):
+   - Price-Quality Signaling (+10 pts): Convert 1688 RMB cost to USD (rmb / 7.2), add $7.50 US DDP freight + box, deduct Etsy fees (9.5% + $0.45). Sweet spot retail price is $42–$58 USD with >55% net margin.
+   - Policy-Safe Differentiation (+10 pts): Position as custom-curated gift set (with custom US brewing guide & linen cloth).
+
+Listing Details:
+${productData.url ? `URL: ${productData.url}` : ''}
+${productData.offerId ? `Offer ID: ${productData.offerId}` : ''}
+${productData.extractedTitle ? `Title: ${productData.extractedTitle}` : ''}
+${productData.specs ? `Specifications: ${JSON.stringify(productData.specs)}` : ''}
+${productData.knownSkus && productData.knownSkus.length > 0 ? `Known Factory SKUs: ${JSON.stringify(productData.knownSkus)}` : ''}
+${productData.pastedText ? `Pasted Details / Page Text: ${productData.pastedText}` : ''}
+
+Identify or generate all factory variants (up to 5), score them accurately on the 100-point model, and rank the top variants.`;
+
+  const responseSchema = {
+    type: Type.OBJECT,
+    properties: {
+      listingTitle: { type: Type.STRING },
+      marketThesis: { type: Type.STRING },
+      variants: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING },
+            skuName: { type: Type.STRING },
+            skuNameEn: { type: Type.STRING },
+            category: { type: Type.STRING },
+            priceCny: { type: Type.NUMBER },
+            hasSpout: { type: Type.BOOLEAN },
+            diameterCm: { type: Type.NUMBER },
+            glazeStyle: { type: Type.STRING },
+            isBundle: { type: Type.BOOLEAN },
+            bundlePieces: { type: Type.INTEGER },
+            colorTheme: { type: Type.STRING },
+            consumerBehaviorScore: { type: Type.NUMBER },
+            algorithmCTRScore: { type: Type.NUMBER },
+            aestheticTrendScore: { type: Type.NUMBER },
+            unitEconomicsScore: { type: Type.NUMBER },
+            totalScore: { type: Type.NUMBER },
+            winningRationale: { type: Type.STRING },
+            suggestedEtsyRetailUsd: { type: Type.NUMBER },
+            etsyTitle: { type: Type.STRING },
+            etsyTags: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+            },
+          },
+          required: [
+            'id',
+            'skuName',
+            'skuNameEn',
+            'category',
+            'priceCny',
+            'hasSpout',
+            'diameterCm',
+            'glazeStyle',
+            'isBundle',
+            'bundlePieces',
+            'colorTheme',
+            'consumerBehaviorScore',
+            'algorithmCTRScore',
+            'aestheticTrendScore',
+            'unitEconomicsScore',
+            'totalScore',
+            'winningRationale',
+            'suggestedEtsyRetailUsd',
+            'etsyTitle',
+            'etsyTags',
+          ],
+        },
+      },
+    },
+    required: ['listingTitle', 'marketThesis', 'variants'],
+  };
+
+  const response = await ai.models.generateContent({
+    model,
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    config: {
+      responseMimeType: 'application/json',
+      responseSchema,
+      temperature: 0.2,
+      maxOutputTokens: 2500,
+    },
+  });
+
+  const text = response.text ?? '';
+  const cleanJson = text.replace(/```json\s*/gi, '').replace(/```\s*$/g, '').trim();
+  return JSON.parse(cleanJson) as Gemini100PointResult;
 }
 
 // ─── Full Product Summary ──────────────────────────────────────────────────

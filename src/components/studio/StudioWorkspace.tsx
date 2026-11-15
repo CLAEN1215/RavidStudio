@@ -178,10 +178,16 @@ export function StudioWorkspace() {
 
     try {
       let imageToProcess = item.originalDataUrl;
+      const isSandboxKey = Boolean(
+        globalOptions.apiKey &&
+          (globalOptions.apiKey.toLowerCase().includes('sandbox') ||
+            globalOptions.apiKey.toLowerCase().startsWith('sandbox_'))
+      );
+      const shouldRunClientAI = !globalOptions.apiKey || isSandboxKey;
 
-      // Built-in AI neural background removal: if no Photoroom API key is configured,
-      // run client-side neural segmentation to erase complex backgrounds (black tables, dark cards)
-      if (!globalOptions.apiKey) {
+      // Built-in AI neural background removal: if no Photoroom live key is configured (or sandbox key),
+      // run client-side neural segmentation to erase complex backgrounds (black tables, dark cards, props)
+      if (shouldRunClientAI) {
         try {
           const { removeBackground } = await import('@imgly/background-removal');
           const blob = await removeBackground(item.originalDataUrl);
@@ -195,22 +201,46 @@ export function StudioWorkspace() {
         }
       }
 
-      const payload = {
+      let payload = {
         image: imageToProcess,
         filename: item.name,
         options: {
           ...item.options,
-          apiKey: globalOptions.apiKey || undefined,
+          apiKey: isSandboxKey ? undefined : (globalOptions.apiKey || undefined),
         },
       };
 
-      const res = await fetch('/api/studio/process', {
+      let res = await fetch('/api/studio/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      let data = await res.json();
+
+      // If Photoroom failed or was not used, and client AI hasn't run yet, run client AI now
+      if (res.ok && data.usedPhotoroom === false && !shouldRunClientAI) {
+        try {
+          const { removeBackground } = await import('@imgly/background-removal');
+          const blob = await removeBackground(item.originalDataUrl);
+          const reader = new FileReader();
+          const isolated = await new Promise<string>((resolve) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+
+          payload.image = isolated;
+          payload.options.apiKey = undefined;
+          res = await fetch('/api/studio/process', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          data = await res.json();
+        } catch (fallbackErr) {
+          console.warn('Fallback client neural remover failed:', fallbackErr);
+        }
+      }
 
       if (!res.ok || data.error) {
         throw new Error(data.error || 'Failed to process image');
@@ -369,21 +399,21 @@ export function StudioWorkspace() {
         <div className="bg-amber-50/90 border border-amber-200/90 rounded-2xl p-4 shadow-xs space-y-2.5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
               <div>
-                <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
-                  <Key className="w-3.5 h-3.5 text-amber-700" />
-                  Background Cutout Engine: Basic Local Fallback Mode
+                <span className="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+                  Background Cutout Engine: Built-in AI Neural Segmentation Active
                 </span>
-                <p className="text-[11px] text-amber-900/80">
-                  Photos with dark cards or tea trays (like 1688 spec cards) require a Photoroom API key for clean edge isolation.
+                <p className="text-[11px] text-emerald-900/80">
+                  Client-side neural network automatically isolates ceramics from dark backgrounds & props. Connect Photoroom for cloud processing.
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => setShowPhotoroomKeyInput(!showPhotoroomKeyInput)}
-                className="px-3 py-1.5 text-xs font-bold bg-amber-200/70 hover:bg-amber-200 text-amber-950 rounded-xl transition-colors border border-amber-300/80 cursor-pointer"
+                className="px-3 py-1.5 text-xs font-bold bg-emerald-100 hover:bg-emerald-200 text-emerald-950 rounded-xl transition-colors border border-emerald-300/80 cursor-pointer"
               >
                 {showPhotoroomKeyInput ? 'Hide Input' : '⚡ Connect Photoroom Key'}
               </button>
@@ -391,9 +421,9 @@ export function StudioWorkspace() {
                 href="https://www.photoroom.com/api"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-2.5 py-1.5 text-xs font-medium text-amber-900 hover:underline flex items-center gap-1"
+                className="px-2.5 py-1.5 text-xs font-medium text-emerald-900 hover:underline flex items-center gap-1"
               >
-                Free Key <ExternalLink className="w-3 h-3" />
+                Get Key <ExternalLink className="w-3 h-3" />
               </a>
             </div>
           </div>
